@@ -1,0 +1,124 @@
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# React Native
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# iOS
+mobile-app/ios/Pods/
+mobile-app/ios/build/
+mobile-app/ios/DerivedData/
+mobile-app/ios/*.xcworkspace/xcuserdata/
+mobile-app/ios/*.xcodeproj/xcuserdata/
+mobile-app/ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Android
+mobile-app/android/build/
+mobile-app/android/app/build/
+mobile-app/android/.gradle/
+mobile-app/android/local.properties
+*.apk
+*.aab
+
+# Firmware build artifacts
+firmware/build/
+firmware/out*/
+firmware/Objects/
+firmware/Listings/
+firmware/*.hex
+firmware/*.bin
+firmware/*.elf
+firmware/*.map
+firmware/*.axf
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Testing
+coverage/
+*.lcov
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build directories
+build/
+dist/
+
+# Debug files
+*.pdb
+
+# Keil specific
+*.uvguix.*
+*.uvoptx
+*.bak
+*.dep
+*.d
+*.crf
+*.htm
+*.i
+*.o
+*.lst
+*.m51
+*.m66
+*.scr
+*.plg
+*.uvguix
+*.uvopt
+
+# GCC specific
+*.a
+*.so
+*.o
+*.obj
+
+# System Files
+Thumbs.DB
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Package manager
+package-lock.json.bak
+yarn.lock.bak
+
+# Metro bundler
+.metro-health-check*
+
+# Credentials and secrets
+*.key
+*.pem
+*.p12
+*.keystore
+google-services.json
+GoogleService-Info.plist
+
+# macOS
+.Spotlight-V100
+.Trashes
