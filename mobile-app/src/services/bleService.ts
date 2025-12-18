@@ -62,12 +62,17 @@ class BleService {
       }
 
       const deviceNameHex = serviceData.substring(0, 8);
-      const deviceName = Buffer.from(deviceNameHex, 'hex').toString('ascii');
+      // Convert hex to ASCII without using Buffer
+      let deviceName = '';
+      for (let i = 0; i < deviceNameHex.length; i += 2) {
+        deviceName += String.fromCharCode(parseInt(deviceNameHex.substring(i, i + 2), 16));
+      }
       
       const command = parseInt(serviceData.substring(8, 10), 16);
       
       const timestampHex = serviceData.substring(10, 18);
-      const timestamp = parseInt(timestampHex, 16);
+      // Use unsigned right shift to handle large numbers
+      const timestamp = parseInt(timestampHex, 16) >>> 0;
 
       return {
         deviceName,

@@ -28,9 +28,9 @@ class StorageService {
     try {
       const jsonValue = await AsyncStorage.getItem(KEYS.COMMAND_HISTORY);
       if (jsonValue != null) {
-        const history = JSON.parse(jsonValue);
+        const history: Command[] = JSON.parse(jsonValue);
         // Convert timestamp strings back to Date objects
-        return history.map((cmd: any) => ({
+        return history.map((cmd) => ({
           ...cmd,
           timestamp: new Date(cmd.timestamp),
         }));

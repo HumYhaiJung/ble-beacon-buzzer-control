@@ -104,11 +104,11 @@ class CommandService {
     // Command (1 byte)
     payload[4] = command;
     
-    // Timestamp (4 bytes, little-endian)
-    payload[5] = timestamp & 0xFF;
-    payload[6] = (timestamp >> 8) & 0xFF;
-    payload[7] = (timestamp >> 16) & 0xFF;
-    payload[8] = (timestamp >> 24) & 0xFF;
+    // Timestamp (4 bytes, little-endian) - use unsigned right shift to handle large numbers
+    payload[5] = (timestamp >>> 0) & 0xFF;
+    payload[6] = (timestamp >>> 8) & 0xFF;
+    payload[7] = (timestamp >>> 16) & 0xFF;
+    payload[8] = (timestamp >>> 24) & 0xFF;
     
     return payload;
   }

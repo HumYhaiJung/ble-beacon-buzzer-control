@@ -53,11 +53,3 @@ export interface SignalStrengthPoint {
 }
 
 export const BEACON_SERVICE_UUID = 'AA28';
-
-export const CommandLabels: Record<CommandCode, string> = {
-  [CommandCode.STOP]: 'Stop',
-  [CommandCode.PLAY]: 'Play',
-  [CommandCode.ENABLE]: 'Enable',
-  [CommandCode.DISABLE]: 'Disable',
-  [CommandCode.STATUS]: 'Status',
-};
