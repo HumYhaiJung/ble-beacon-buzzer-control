@@ -1,11 +1,9 @@
 import { BleDevice, Command, CommandCode, BEACON_SERVICE_UUID } from '../types';
+import { bleService } from './bleService';
 
 class CommandService {
   /**
-   * Send a command to a beacon device
-   * Note: In beacon mode, we don't actually "send" commands in the traditional sense.
-   * Instead, we would advertise our own beacon with the command.
-   * This is a simplified implementation.
+   * Send a command to a beacon device via GATT write
    */
   async sendCommand(
     device: BleDevice,
@@ -27,13 +25,8 @@ class CommandService {
         success: false,
       };
 
-      // In a real implementation, we would:
-      // 1. Start advertising our own beacon with the command
-      // 2. Wait for the device to respond with updated status
-      // 3. Parse the response and update command.success
-      
-      // For now, simulate sending the command
-      await this.simulateCommandSend(device, command);
+      // Connect to device and send GATT write command
+      await this.sendGattCommand(device.id, command);
 
       // Update command as successful
       cmd.success = true;
@@ -68,23 +61,48 @@ class CommandService {
   }
 
   /**
-   * Simulate command send (placeholder for actual beacon advertising)
+   * Send GATT command to connected device
    */
-  private async simulateCommandSend(
-    device: BleDevice,
-    command: CommandCode
-  ): Promise<void> {
-    // In a real implementation, this would:
-    // 1. Configure our device to advertise as a beacon
-    // 2. Set service data with our command payload
-    // 3. Start advertising for a short period
-    // 4. Stop advertising
-    
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // For now, just log the command
-    console.log(`Sending command ${CommandCode[command]} to device ${device.name}`);
+  private async sendGattCommand(deviceId: string, command: CommandCode): Promise<void> {
+    try {
+      // Connect to the device
+      const connectedDevice = await bleService.connectToDevice(deviceId);
+      
+      // Get SWT-T1 service and characteristic
+      const services = await connectedDevice.services();
+      console.log('Discovered services:', services.map(s => s.uuid));
+      const swtService = services.find(s => 
+        s.uuid.toLowerCase() === BEACON_SERVICE_UUID.toLowerCase() ||
+        s.uuid.replace(/-/g, '').toLowerCase() === BEACON_SERVICE_UUID.replace(/-/g, '').toLowerCase()
+      );
+      
+      if (!swtService) {
+         bleService.disconnectDevice(deviceId);
+        throw new Error('SWT-T1 service not found');
+      }
+      
+      const characteristics = await swtService.characteristics();
+      const writeChar = characteristics.find(c => c.isWritableWithResponse || c.isWritableWithoutResponse);
+      
+      if (!writeChar) {
+        throw new Error('Write characteristic not found');
+      }
+      
+      // Send command as single byte
+      const commandByte = new Uint8Array([command]);
+      const base64Command = btoa(String.fromCharCode(...commandByte));
+      
+      await writeChar.writeWithResponse(base64Command);
+      
+      // Disconnect after command
+      setTimeout(() => {
+        bleService.disconnectDevice(deviceId);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('GATT command error:', error);
+      throw error;
+    }
   }
 
   /**

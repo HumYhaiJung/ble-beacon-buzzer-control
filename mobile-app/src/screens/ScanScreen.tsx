@@ -17,8 +17,10 @@ import { BleDevice } from '../types';
 
 export const ScanScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { devices, setDevices, isScanning, setIsScanning, setSelectedDevice, favoriteDevices, toggleFavorite } = useAppContext();
+  const { devices, setDevices: _setDevices, isScanning, setIsScanning, setSelectedDevice, favoriteDevices, toggleFavorite } = useAppContext();
+  const setDevices = _setDevices as React.Dispatch<React.SetStateAction<BleDevice[]>>;
   const [refreshing, setRefreshing] = useState(false);
+  const [showRaw, setShowRaw] = useState(false);
 
   useEffect(() => {
     startScan();
@@ -34,17 +36,14 @@ export const ScanScreen: React.FC = () => {
 
       await bleService.startScanning(
         (device) => {
-          setDevices((prevDevices) => {
-            const existingIndex = prevDevices.findIndex((d) => d.id === device.id);
+          setDevices((prev: BleDevice[]) => {
+            const existingIndex = prev.findIndex((d) => d.id === device.id);
             if (existingIndex >= 0) {
-              // Update existing device
-              const updated = [...prevDevices];
+              const updated = [...prev];
               updated[existingIndex] = device;
               return updated;
-            } else {
-              // Add new device
-              return [...prevDevices, device];
             }
+            return [...prev, device];
           });
         },
         (error) => {
@@ -101,6 +100,9 @@ export const ScanScreen: React.FC = () => {
             {isScanning ? 'Stop Scanning' : 'Start Scanning'}
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity style={[styles.button, styles.debugButton]} onPress={() => setShowRaw((s) => !s)}>
+          <Text style={styles.buttonText}>{showRaw ? 'Hide Raw' : 'Show Raw'}</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.deviceCountContainer}>
@@ -137,6 +139,21 @@ export const ScanScreen: React.FC = () => {
         }
         contentContainerStyle={devices.length === 0 && styles.emptyListContainer}
       />
+      {showRaw && (
+        <View style={styles.rawContainer}>
+          <Text style={styles.rawTitle}>Raw Devices (debug)</Text>
+          <FlatList
+            data={devices}
+            keyExtractor={(item) => `raw-${item.id}`}
+            renderItem={({ item }) => (
+              <View style={styles.rawItem}>
+                <Text style={styles.rawId}>{item.id}</Text>
+                <Text style={styles.rawJson}>{JSON.stringify(item.raw || {}, null, 2)}</Text>
+              </View>
+            )}
+          />
+        </View>
+      )}
     </View>
   );
 };
@@ -213,5 +230,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9E9E9E',
     textAlign: 'center',
+  },
+  debugButton: {
+    marginTop: 8,
+    backgroundColor: '#607D8B',
+  },
+  rawContainer: {
+    backgroundColor: '#FFFFFF',
+    margin: 12,
+    padding: 12,
+    borderRadius: 8,
+    maxHeight: 240,
+  },
+  rawTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  rawItem: {
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
+    paddingTop: 8,
+    marginTop: 8,
+  },
+  rawId: {
+    fontSize: 12,
+    color: '#424242',
+    marginBottom: 4,
+  },
+  rawJson: {
+    fontSize: 11,
+    color: '#616161',
+    fontFamily: 'monospace',
   },
 });

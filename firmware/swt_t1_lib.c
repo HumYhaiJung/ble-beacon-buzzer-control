@@ -41,7 +41,7 @@ static const struct attm_desc_128 swt_t1_att_db[SWT_T1_IDX_NB] =
 
     /* Characteristic declaration (index 1) - 0x2803 (16-bit UUID) */
     [SWT_T1_IDX_CHAR_DECL] = {
-        . uuid = char_decl_uuid16,
+        .uuid = char_decl_uuid16,
         .uuid_size = ATT_UUID_16_LEN,
         .perm = PERM(RD, ENABLE),
         .max_length = 0,
@@ -75,21 +75,16 @@ void swt_t1_init(void)
     ke_task_id_t dest_id = (ke_task_id_t) 0;
 #endif
 
-    
-
     status = attm_svc_create_db_128(0, &start_hdl, NULL, SWT_T1_IDX_NB,
                                    att_tbl, dest_id, swt_t1_att_db, PERM_MASK_SVC_PRIMARY);
 
- 
     if (status == ATT_ERR_NO_ERROR)
     {
         s_char_handle = start_hdl + SWT_T1_IDX_CHAR_VAL;
-       
     }
     else
     {
         s_char_handle = 0;
-   
     }
 }
 

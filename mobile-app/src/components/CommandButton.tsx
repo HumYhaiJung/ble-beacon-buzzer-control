@@ -19,8 +19,8 @@ export const CommandButton: React.FC<CommandButtonProps> = ({
   loading = false,
   variant = 'primary',
 }) => {
-  const getButtonStyle = () => {
-    const baseStyle = [styles.button];
+  const getButtonStyle = (): any[] => {
+    const baseStyle: any[] = [styles.button];
     
     if (disabled) {
       baseStyle.push(styles.buttonDisabled);

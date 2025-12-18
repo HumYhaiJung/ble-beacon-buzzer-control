@@ -7,6 +7,7 @@ export interface BleDevice {
   name: string;
   rssi: number;
   serviceData?: BeaconPayload;
+  raw?: any;
   lastSeen: Date;
   isConnected?: boolean;
 }
@@ -52,4 +53,4 @@ export interface SignalStrengthPoint {
   rssi: number;
 }
 
-export const BEACON_SERVICE_UUID = 'AA28';
+export const BEACON_SERVICE_UUID = '737774-74312d63616c6c0000000000000000';
