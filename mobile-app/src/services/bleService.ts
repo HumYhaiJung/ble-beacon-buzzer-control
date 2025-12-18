@@ -1,13 +1,29 @@
 import { BleManager, Device, Subscription } from 'react-native-ble-plx';
 import { BleDevice, BeaconPayload, BEACON_SERVICE_UUID } from '../types';
-import { Platform, PermissionsAndroid } from 'react-native';
+import { Platform, PermissionsAndroid, NativeModules } from 'react-native';
 
 class BleService {
-  private manager: BleManager;
+  private manager: BleManager | null = null;
   private scanSubscription: Subscription | null = null;
 
   constructor() {
-    this.manager = new BleManager();
+    // Check if BLE native module is available (not in Expo Go or web environment)
+    if (NativeModules.BlePlx) {
+      try {
+        this.manager = new BleManager();
+      } catch (error) {
+        console.error('Failed to initialize BLE Manager:', error);
+        throw new Error(
+          'BLE module is not available. Make sure you are running on a device or emulator with native support. ' +
+          'Do NOT use Expo Go. Use "npx expo run:android" or "npx expo run:ios" instead.'
+        );
+      }
+    } else {
+      throw new Error(
+        'BLE native module not available. This app requires a native build. ' +
+        'Run "npx expo run:android" or "npx expo run:ios" instead of "expo start"'
+      );
+    }
   }
 
   /**
@@ -46,6 +62,9 @@ class BleService {
    * Check if Bluetooth is enabled
    */
   async checkBluetoothState(): Promise<boolean> {
+    if (!this.manager) {
+      throw new Error('BLE Manager not initialized');
+    }
     const state = await this.manager.state();
     return state === 'PoweredOn';
   }
@@ -94,7 +113,7 @@ class BleService {
   ): Promise<void> {
     try {
       // Stop any existing scan
-      await this.stopScanning();
+      this.stopScanning();
 
       // Check permissions
       const hasPermission = await this.requestPermissions();
@@ -109,7 +128,11 @@ class BleService {
       }
 
       // Start scanning
-      this.scanSubscription = this.manager.startDeviceScan(
+      if (!this.manager) {
+        throw new Error('BLE Manager not initialized');
+      }
+
+      this.manager.startDeviceScan(
         null, // Scan for all devices
         { allowDuplicates: true }, // Allow duplicates to get RSSI updates
         (error, device) => {
@@ -151,18 +174,19 @@ class BleService {
   /**
    * Stop scanning
    */
-  async stopScanning(): Promise<void> {
-    if (this.scanSubscription) {
-      this.scanSubscription.remove();
-      this.scanSubscription = null;
+  stopScanning(): void {
+    if (this.manager) {
+      this.manager.stopDeviceScan();
     }
-    this.manager.stopDeviceScan();
   }
 
   /**
    * Connect to a device (for future use - current implementation is beacon-only)
    */
   async connectToDevice(deviceId: string): Promise<Device> {
+    if (!this.manager) {
+      throw new Error('BLE Manager not initialized');
+    }
     try {
       const device = await this.manager.connectToDevice(deviceId);
       await device.discoverAllServicesAndCharacteristics();
@@ -178,6 +202,9 @@ class BleService {
    */
   async disconnectDevice(deviceId: string): Promise<void> {
     try {
+      if (!this.manager) {
+        throw new Error('BLE Manager not initialized');
+      }
       await this.manager.cancelDeviceConnection(deviceId);
     } catch (error) {
       console.error('Error disconnecting device:', error);
@@ -190,7 +217,9 @@ class BleService {
    */
   destroy(): void {
     this.stopScanning();
-    this.manager.destroy();
+    if (this.manager) {
+      this.manager.destroy();
+    }
   }
 }
 
