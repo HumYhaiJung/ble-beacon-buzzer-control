@@ -40,19 +40,40 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
           <Text style={styles.deviceName}>{device.name}</Text>
           <Text style={styles.deviceId}>{device.id.substring(0, 17)}...</Text>
           {device.serviceData && (
-            <Text style={styles.deviceInfo}>
-              Device: {device.serviceData.deviceName}
-            </Text>
+            <Text style={styles.deviceInfo}>Device: {device.serviceData.deviceName}</Text>
           )}
+
+          {/* Charging / Power status indicator (from service data or raw scan) */}
+          {((device.raw && device.raw.powerStatus !== undefined) ||
+            (device.serviceData && typeof device.serviceData.command === 'number')) &&
+            (() => {
+              const ps =
+                device.raw && device.raw.powerStatus !== undefined
+                  ? device.raw.powerStatus
+                  : device.serviceData
+                    ? device.serviceData.command
+                    : undefined;
+              const isCharging = ps === 1;
+              return (
+                <View
+                  style={[
+                    styles.chargeContainer,
+                    { backgroundColor: isCharging ? '#4CAF50' : '#BDBDBD' },
+                  ]}
+                >
+                  <Text style={styles.chargeText}>{isCharging ? 'Charging' : 'Not Charging'}</Text>
+                </View>
+              );
+            })()}
         </View>
-        
+
         <View style={styles.rightContent}>
           {onFavoriteToggle && (
             <TouchableOpacity onPress={onFavoriteToggle} style={styles.favoriteButton}>
               <Text style={styles.favoriteIcon}>{isFavorite ? '★' : '☆'}</Text>
             </TouchableOpacity>
           )}
-          
+
           <View style={styles.signalContainer}>
             <View style={styles.signalBars}>
               {[1, 2, 3, 4, 5].map((bar) => (
@@ -72,7 +93,7 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
           </View>
         </View>
       </View>
-      
+
       {device.isConnected && (
         <View style={styles.connectedBadge}>
           <Text style={styles.connectedText}>Connected</Text>
@@ -159,5 +180,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     color: '#FFFFFF',
+  },
+  chargeContainer: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+  },
+  chargeText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 });
