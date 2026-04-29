@@ -7,6 +7,7 @@ export interface BleDevice {
   name: string;
   rssi: number;
   serviceData?: BeaconPayload;
+  powerStatus?: number; // 0 = OFF, 1 = ON (from svc_data.data[0])
   raw?: any;
   lastSeen: Date;
   isConnected?: boolean;
@@ -16,6 +17,7 @@ export interface BeaconPayload {
   deviceName: string;
   command: CommandCode;
   timestamp: number;
+  powerStatus?: number; // 0 = OFF, 1 = ON
 }
 
 export enum CommandCode {
@@ -53,4 +55,4 @@ export interface SignalStrengthPoint {
   rssi: number;
 }
 
-export const BEACON_SERVICE_UUID = '737774-74312d63616c6c0000000000000000';
+export const BEACON_SERVICE_UUID = 'fff0';

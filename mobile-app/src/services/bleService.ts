@@ -226,17 +226,9 @@ class BleService {
         throw new Error('BLE Manager not initialized');
       }
 
-      console.log('Starting BLE scan with BEACON_SERVICE_UUID =', BEACON_SERVICE_UUID);
-      try {
-        const mgrState = await this.manager.state();
-        console.log('BLE Manager state before scan:', mgrState);
-      } catch (e) {
-        console.warn('Failed to read BLE manager state:', e);
-      }
-
       this.manager.startDeviceScan(
         null, // Scan for all devices
-        { allowDuplicates: true }, // Allow duplicates to get RSSI updates
+        { allowDuplicates: false }, // Disable duplicates for better performance
         (error, device) => {
           if (error) {
             console.error('Scan error:', error);
@@ -245,39 +237,23 @@ class BleService {
           }
 
           if (!device) return;
-
-          // Log discovered device summary for debugging
-          try {
-            const sdKeys = device.serviceData ? Object.keys(device.serviceData) : null;
-            // console.log('Discovered device:', {
-            //   id: device.id,
-            //   name:  device.localName || device.name,
-            //   rssi: device.rssi,
-            //   serviceDataKeys: sdKeys,
-            // });
-            if (device.serviceData && sdKeys && sdKeys.length > 0) {
-              sdKeys.forEach((k) => console.log(`serviceData[${k}] =`, device.serviceData ? device.serviceData[k] : null,device.localName || device.name));
-            }
-          } catch (e) {
-            console.warn('Error logging device info:', e);
-          }
-
-          // Try to extract beacon data from service data UUID 28151 (0x6DF7)
+          if(!device.name?.startsWith('SWT')) return; // Ignore SWT-T1 classic devices
+          // Try to extract beacon data and change status
           let payload: BeaconPayload | null = null;
           let extractedName: string | undefined;
-          let powerStatus: number | undefined;
+          let changeStatus: number | undefined;
+
+          // Extract change status from manufacturer data (mnf_data.proprietary_data[0] = byte index 2)
+          if ((device as any).manufacturerData) {
+            const mfgDataBytes = this.base64ToBytes((device as any).manufacturerData);
+            // Format: [company_id_lo][company_id_hi][proprietary_data[0]][proprietary_data[1]]...
+            // Change status is at byte index 2 (proprietary_data[0]): 0 or 1
+            if (mfgDataBytes.length > 2) {
+              changeStatus = mfgDataBytes[2]; // 0 or 1
+            }
+          }
 
           if (device.serviceData) {
-            // Check for service data with UUID 28151 (0x6DF7) - power status
-            const powerServiceData = device.serviceData['6df7'] || device.serviceData['6DF7'];
-            if (powerServiceData) {
-              // Service data format: power status (1 byte)
-              const bytes = this.base64ToBytes(powerServiceData);
-              if (bytes.length > 0) {
-                powerStatus = bytes[0]; // 0 = power off, 1 = power on
-              }
-            }
-
             // Check for main service UUID (128-bit swt-t1 service)
             const serviceUUID = BEACON_SERVICE_UUID.toLowerCase();
             const serviceData = device.serviceData[serviceUUID] || device.serviceData[BEACON_SERVICE_UUID] || device.serviceData[serviceUUID.toUpperCase()];
@@ -328,24 +304,23 @@ class BleService {
             // ignore parsing errors
           }
 
-          // If no name yet, try to extract from manufacturerData fallback
-          if (!extractedName && (device as any).manufacturerData) {
-            const mfgData = this.decodeManufacturerData((device as any).manufacturerData);
-            if (mfgData?.deviceName) {
-              extractedName = mfgData.deviceName;
-            }
+          // If no name yet, try to extract from device name properties
+          if (!extractedName && (device as any).name) {
+            extractedName = (device as any).name;
           }
 
-          // Create device with best available name and power status
+          // Create device with best available name and change status
           const deviceName = device.localName || device.name || extractedName || 'Unknown';
           const bleDevice: BleDevice = {
             id: device.id,
             name: deviceName,
             rssi: device.rssi || -100,
-            serviceData: payload || (powerStatus !== undefined ? { 
+            powerStatus: changeStatus, // 0 or 1 - change status from mnf_data[0]
+            serviceData: payload || (changeStatus !== undefined ? { 
               deviceName: deviceName,
-              command: powerStatus as CommandCode,
-              timestamp: Date.now()
+              command: changeStatus as CommandCode,
+              timestamp: Date.now(),
+              powerStatus: changeStatus
             } : undefined),
             raw: {
               serviceData: device.serviceData,
@@ -353,7 +328,7 @@ class BleService {
               localName: device.localName,
               name: device.name,
               rawScanRecord: (device as any).rawScanRecord,
-              powerStatus: powerStatus,
+              powerStatus: changeStatus,
             },
             lastSeen: new Date(),
           };

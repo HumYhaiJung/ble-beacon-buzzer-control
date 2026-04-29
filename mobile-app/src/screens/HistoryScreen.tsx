@@ -1,33 +1,22 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useAppContext } from '../context/AppContext';
 import { Command, CommandCode } from '../types';
-import { commandService } from '../services/commandService';
+import { commandService } from '../services/connectionService';
 
 export const HistoryScreen: React.FC = () => {
   const { commandHistory, clearHistory, devices } = useAppContext();
   const [filterDeviceId, setFilterDeviceId] = useState<string | null>(null);
 
   const handleClearHistory = () => {
-    Alert.alert(
-      'Clear History',
-      'Are you sure you want to clear all command history?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: clearHistory,
-        },
-      ]
-    );
+    Alert.alert('Clear History', 'Are you sure you want to clear all command history?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: clearHistory,
+      },
+    ]);
   };
 
   const filteredHistory = filterDeviceId
@@ -43,28 +32,23 @@ export const HistoryScreen: React.FC = () => {
         <View style={styles.commandHeader}>
           <Text style={styles.deviceName}>{item.deviceName}</Text>
           <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: item.success ? '#4CAF50' : '#F44336' },
-            ]}
+            style={[styles.statusBadge, { backgroundColor: item.success ? '#4CAF50' : '#F44336' }]}
           >
-            <Text style={styles.statusText}>
-              {item.success ? 'Success' : 'Failed'}
-            </Text>
+            <Text style={styles.statusText}>{item.success ? 'Success' : 'Failed'}</Text>
           </View>
         </View>
-        
+
         <View style={styles.commandDetails}>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Command:</Text>
             <Text style={styles.detailValue}>{commandLabel}</Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Time:</Text>
             <Text style={styles.detailValue}>{timestamp}</Text>
           </View>
-          
+
           {item.response && (
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Response:</Text>
@@ -76,15 +60,15 @@ export const HistoryScreen: React.FC = () => {
     );
   };
 
-  const uniqueDevices = Array.from(
-    new Set(commandHistory.map((cmd) => cmd.deviceId))
-  ).map((deviceId) => {
-    const cmd = commandHistory.find((c) => c.deviceId === deviceId);
-    return {
-      id: deviceId,
-      name: cmd?.deviceName || 'Unknown',
-    };
-  });
+  const uniqueDevices = Array.from(new Set(commandHistory.map((cmd) => cmd.deviceId))).map(
+    (deviceId) => {
+      const cmd = commandHistory.find((c) => c.deviceId === deviceId);
+      return {
+        id: deviceId,
+        name: cmd?.deviceName || 'Unknown',
+      };
+    }
+  );
 
   return (
     <View style={styles.container}>
@@ -100,10 +84,7 @@ export const HistoryScreen: React.FC = () => {
           <Text style={styles.filterLabel}>Filter by device:</Text>
           <View style={styles.filterButtons}>
             <TouchableOpacity
-              style={[
-                styles.filterButton,
-                filterDeviceId === null && styles.filterButtonActive,
-              ]}
+              style={[styles.filterButton, filterDeviceId === null && styles.filterButtonActive]}
               onPress={() => setFilterDeviceId(null)}
             >
               <Text
@@ -115,7 +96,7 @@ export const HistoryScreen: React.FC = () => {
                 All
               </Text>
             </TouchableOpacity>
-            
+
             {uniqueDevices.map((device) => (
               <TouchableOpacity
                 key={device.id}
@@ -146,22 +127,15 @@ export const HistoryScreen: React.FC = () => {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No command history</Text>
-            <Text style={styles.emptySubtext}>
-              Commands you send will appear here
-            </Text>
+            <Text style={styles.emptySubtext}>Commands you send will appear here</Text>
           </View>
         }
-        contentContainerStyle={
-          filteredHistory.length === 0 && styles.emptyListContainer
-        }
+        contentContainerStyle={filteredHistory.length === 0 && styles.emptyListContainer}
       />
 
       {commandHistory.length > 0 && (
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={handleClearHistory}
-          >
+          <TouchableOpacity style={styles.clearButton} onPress={handleClearHistory}>
             <Text style={styles.clearButtonText}>Clear History</Text>
           </TouchableOpacity>
         </View>

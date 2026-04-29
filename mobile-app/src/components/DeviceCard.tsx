@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { BleDevice } from '../types';
 
@@ -9,29 +9,33 @@ interface DeviceCardProps {
   onFavoriteToggle?: () => void;
 }
 
-export const DeviceCard: React.FC<DeviceCardProps> = ({
+const DeviceCardComponent: React.FC<DeviceCardProps> = ({
   device,
   isFavorite = false,
   onPress,
   onFavoriteToggle,
 }) => {
-  const getSignalStrengthBars = (rssi: number): number => {
-    if (rssi >= -50) return 5;
-    if (rssi >= -60) return 4;
-    if (rssi >= -70) return 3;
-    if (rssi >= -80) return 2;
-    if (rssi >= -90) return 1;
-    return 0;
-  };
+  const signalInfo = useMemo(() => {
+    const getSignalStrengthBars = (rssi: number): number => {
+      if (rssi >= -50) return 5;
+      if (rssi >= -60) return 4;
+      if (rssi >= -70) return 3;
+      if (rssi >= -80) return 2;
+      if (rssi >= -90) return 1;
+      return 0;
+    };
 
-  const getSignalColor = (rssi: number): string => {
-    if (rssi >= -60) return '#4CAF50';
-    if (rssi >= -75) return '#FFC107';
-    return '#F44336';
-  };
+    const getSignalColor = (rssi: number): string => {
+      if (rssi >= -60) return '#4CAF50';
+      if (rssi >= -75) return '#FFC107';
+      return '#F44336';
+    };
 
-  const bars = getSignalStrengthBars(device.rssi);
-  const signalColor = getSignalColor(device.rssi);
+    return {
+      bars: getSignalStrengthBars(device.rssi),
+      color: getSignalColor(device.rssi),
+    };
+  }, [device.rssi]);
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
@@ -41,6 +45,20 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
           <Text style={styles.deviceId}>{device.id.substring(0, 17)}...</Text>
           {device.serviceData && (
             <Text style={styles.deviceInfo}>Device: {device.serviceData.deviceName}</Text>
+          )}
+
+          {/* Change status indicator (from mnf_data.proprietary_data[0]: 0 or 1) */}
+          {device.powerStatus !== undefined && (
+            <View
+              style={[
+                styles.statusContainer,
+                { backgroundColor: device.powerStatus === 0 ? '#4CAF50' : '#F44336' },
+              ]}
+            >
+              <Text style={styles.statusText}>
+                {device.powerStatus === 0 ? '⚡ Changed' : '⭕ Stable'}
+              </Text>
+            </View>
           )}
 
           {/* Charging / Power status indicator (from service data or raw scan) */}
@@ -53,7 +71,7 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
                   : device.serviceData
                     ? device.serviceData.command
                     : undefined;
-              const isCharging = ps === 1;
+              const isCharging = ps === 0;
               return (
                 <View
                   style={[
@@ -83,7 +101,7 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
                     styles.signalBar,
                     {
                       height: bar * 4,
-                      backgroundColor: bar <= bars ? signalColor : '#E0E0E0',
+                      backgroundColor: bar <= signalInfo.bars ? signalInfo.color : '#E0E0E0',
                     },
                   ]}
                 />
@@ -102,6 +120,15 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
     </TouchableOpacity>
   );
 };
+
+export const DeviceCard = React.memo(DeviceCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.device.id === nextProps.device.id &&
+    prevProps.device.rssi === nextProps.device.rssi &&
+    prevProps.device.powerStatus === nextProps.device.powerStatus &&
+    prevProps.isFavorite === nextProps.isFavorite
+  );
+});
 
 const styles = StyleSheet.create({
   card: {
@@ -167,6 +194,18 @@ const styles = StyleSheet.create({
   rssiText: {
     fontSize: 10,
     color: '#757575',
+  },
+  statusContainer: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  statusText: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   connectedBadge: {
     marginTop: 12,

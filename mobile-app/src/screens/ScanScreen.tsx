@@ -17,7 +17,15 @@ import { BleDevice } from '../types';
 
 export const ScanScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { devices, setDevices: _setDevices, isScanning, setIsScanning, setSelectedDevice, favoriteDevices, toggleFavorite } = useAppContext();
+  const {
+    devices,
+    setDevices: _setDevices,
+    isScanning,
+    setIsScanning,
+    setSelectedDevice,
+    favoriteDevices,
+    toggleFavorite,
+  } = useAppContext();
   const setDevices = _setDevices as React.Dispatch<React.SetStateAction<BleDevice[]>>;
   const [refreshing, setRefreshing] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
@@ -86,9 +94,7 @@ export const ScanScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>BLE Beacon Scanner</Text>
-        <StatusIndicator 
-          status={isScanning ? 'scanning' : 'idle'} 
-        />
+        <StatusIndicator status={isScanning ? 'scanning' : 'idle'} />
       </View>
 
       <View style={styles.controlsContainer}>
@@ -96,11 +102,12 @@ export const ScanScreen: React.FC = () => {
           style={[styles.button, isScanning && styles.buttonDanger]}
           onPress={isScanning ? stopScan : startScan}
         >
-          <Text style={styles.buttonText}>
-            {isScanning ? 'Stop Scanning' : 'Start Scanning'}
-          </Text>
+          <Text style={styles.buttonText}>{isScanning ? 'Stop Scanning' : 'Start Scanning'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.debugButton]} onPress={() => setShowRaw((s) => !s)}>
+        <TouchableOpacity
+          style={[styles.button, styles.debugButton]}
+          onPress={() => setShowRaw((s) => !s)}
+        >
           <Text style={styles.buttonText}>{showRaw ? 'Hide Raw' : 'Show Raw'}</Text>
         </TouchableOpacity>
       </View>
@@ -122,17 +129,15 @@ export const ScanScreen: React.FC = () => {
             onFavoriteToggle={() => toggleFavorite(item.id)}
           />
         )}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
               {isScanning ? 'Scanning for devices...' : 'No devices found'}
             </Text>
             <Text style={styles.emptySubtext}>
-              {isScanning 
-                ? 'Make sure your beacon device is nearby and powered on' 
+              {isScanning
+                ? 'Make sure your beacon device is nearby and powered on'
                 : 'Pull down to refresh or press Start Scanning'}
             </Text>
           </View>

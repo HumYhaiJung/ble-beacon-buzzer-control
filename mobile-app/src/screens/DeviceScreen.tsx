@@ -1,16 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  Dimensions,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, Dimensions } from 'react-native';
 import { useAppContext } from '../context/AppContext';
 import { CommandButton } from '../components/CommandButton';
 import { StatusIndicator } from '../components/StatusIndicator';
-import { commandService } from '../services/commandService';
+import { connectionService } from '../services/connectionService';
 import { CommandCode, SignalStrengthPoint } from '../types';
 import { LineChart } from 'react-native-chart-kit';
 
@@ -19,6 +12,24 @@ export const DeviceScreen: React.FC = () => {
   const [loadingCommand, setLoadingCommand] = useState<CommandCode | null>(null);
   const [signalHistory, setSignalHistory] = useState<SignalStrengthPoint[]>([]);
 
+  // Helper function to get command label
+  const getCommandLabel = (command: CommandCode): string => {
+    switch (command) {
+      case CommandCode.STOP:
+        return 'Stop';
+      case CommandCode.PLAY:
+        return 'Play';
+      case CommandCode.ENABLE:
+        return 'Enable';
+      case CommandCode.DISABLE:
+        return 'Disable';
+      case CommandCode.STATUS:
+        return 'Status';
+      default:
+        return 'Unknown';
+    }
+  };
+
   useEffect(() => {
     if (selectedDevice) {
       // Add current RSSI to history
@@ -26,7 +37,7 @@ export const DeviceScreen: React.FC = () => {
         timestamp: Date.now(),
         rssi: selectedDevice.rssi,
       };
-      
+
       setSignalHistory((prev) => {
         const updated = [...prev, point];
         // Keep last 20 points
@@ -46,32 +57,54 @@ export const DeviceScreen: React.FC = () => {
   const handleCommandPress = async (command: CommandCode) => {
     try {
       setLoadingCommand(command);
-      
-      const result = await commandService.sendCommand(selectedDevice, command);
+
+      // Use connection service instead of GATT command service
+      await connectionService.sendCommand(selectedDevice.id, command);
+
+      // Create a successful command for history
+      const result = {
+        id: Date.now().toString(),
+        deviceId: selectedDevice.id,
+        deviceName: selectedDevice.name,
+        command,
+        timestamp: new Date(),
+        success: true,
+        response: 'Command sent via connection trigger',
+      };
+
       addCommandToHistory(result);
-      
+
       Alert.alert(
         'Success',
-        `Command "${commandService.getCommandLabel(command)}" sent successfully`
+        `Command "${getCommandLabel(command)}" sent successfully via connection`
       );
     } catch (error: any) {
-      // error is actually a Command object with success: false
-      addCommandToHistory(error);
-      Alert.alert('Error', error.response || 'Failed to send command');
+      // Create a failed command for history
+      const result = {
+        id: Date.now().toString(),
+        deviceId: selectedDevice.id,
+        deviceName: selectedDevice.name,
+        command,
+        timestamp: new Date(),
+        success: false,
+        response: error.message || 'Connection command failed',
+      };
+
+      addCommandToHistory(result);
+      Alert.alert('Error', error.message || 'Failed to send command');
     } finally {
       setLoadingCommand(null);
     }
   };
 
   const chartData = {
-    labels: signalHistory.length > 0 
-      ? signalHistory.map((_, idx) => (idx % 5 === 0 ? idx.toString() : ''))
-      : [''],
+    labels:
+      signalHistory.length > 0
+        ? signalHistory.map((_, idx) => (idx % 5 === 0 ? idx.toString() : ''))
+        : [''],
     datasets: [
       {
-        data: signalHistory.length > 0 
-          ? signalHistory.map((point) => point.rssi)
-          : [-100],
+        data: signalHistory.length > 0 ? signalHistory.map((point) => point.rssi) : [-100],
       },
     ],
   };
@@ -82,10 +115,7 @@ export const DeviceScreen: React.FC = () => {
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
         <Text style={styles.deviceName}>{selectedDevice.name}</Text>
-        <StatusIndicator
-          status="connected"
-          signalStrength={selectedDevice.rssi}
-        />
+        <StatusIndicator status="connected" signalStrength={selectedDevice.rssi} />
       </View>
 
       <View style={styles.infoCard}>
@@ -106,7 +136,7 @@ export const DeviceScreen: React.FC = () => {
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Last Command:</Text>
               <Text style={styles.infoValue}>
-                {commandService.getCommandLabel(selectedDevice.serviceData.command)}
+                {getCommandLabel(selectedDevice.serviceData.command)}
               </Text>
             </View>
           </>
@@ -144,7 +174,7 @@ export const DeviceScreen: React.FC = () => {
 
       <View style={styles.commandsCard}>
         <Text style={styles.commandsTitle}>Commands</Text>
-        
+
         <CommandButton
           command={CommandCode.PLAY}
           label="Play Buzzer"
@@ -153,8 +183,8 @@ export const DeviceScreen: React.FC = () => {
           disabled={loadingCommand !== null}
           variant="success"
         />
-        
-        <CommandButton
+
+        {/* <CommandButton
           command={CommandCode.STOP}
           label="Stop Buzzer"
           onPress={() => handleCommandPress(CommandCode.STOP)}
@@ -162,7 +192,7 @@ export const DeviceScreen: React.FC = () => {
           disabled={loadingCommand !== null}
           variant="danger"
         />
-        
+
         <CommandButton
           command={CommandCode.ENABLE}
           label="Enable Buzzer"
@@ -171,7 +201,7 @@ export const DeviceScreen: React.FC = () => {
           disabled={loadingCommand !== null}
           variant="primary"
         />
-        
+
         <CommandButton
           command={CommandCode.DISABLE}
           label="Disable Buzzer"
@@ -179,16 +209,16 @@ export const DeviceScreen: React.FC = () => {
           loading={loadingCommand === CommandCode.DISABLE}
           disabled={loadingCommand !== null}
           variant="secondary"
-        />
-        
-        <CommandButton
+        /> */}
+
+        {/* <CommandButton
           command={CommandCode.STATUS}
           label="Request Status"
           onPress={() => handleCommandPress(CommandCode.STATUS)}
           loading={loadingCommand === CommandCode.STATUS}
           disabled={loadingCommand !== null}
           variant="primary"
-        />
+        /> */}
       </View>
     </ScrollView>
   );
